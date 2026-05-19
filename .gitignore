@@ -1,3 +1,5 @@
 .env
 AGENTS.md
 GEMINI.md
+/api/node_modules
+/web/node_modules
