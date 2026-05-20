@@ -1,51 +1,48 @@
 import { useState } from 'react'
-
-type User = {
-  id: string
-  name: string
-  email: string
-  role: string
-  status: string
-}
-
-const initialUsers: User[] = [
-  {
-    id: 'user-1',
-    name: 'Alice Bernard',
-    email: 'alice@school.local',
-    role: 'ADMIN',
-    status: 'Actif',
-  },
-  {
-    id: 'user-2',
-    name: 'Yanis Morel',
-    email: 'yanis@school.local',
-    role: 'TEACHER',
-    status: 'Invité',
-  },
-]
+import { requestJson } from '../lib/api'
 
 const emptyDraft = {
-  name: '',
-  email: '',
+  name: 'Nadia Leroy',
+  email: 'nadia@school.local',
   role: 'STUDENT',
-  status: 'Actif',
+  password: 'password123',
+}
+
+type UserResponse = {
+  action: string
+  payload: {
+    name: string
+    email: string
+    role: string
+    password: string
+  }
 }
 
 export function UsersPage() {
-  const [users, setUsers] = useState(initialUsers)
   const [draft, setDraft] = useState(emptyDraft)
+  const [response, setResponse] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    setUsers((currentUsers) => [
-      ...currentUsers,
-      {
-        id: `user-${Date.now()}`,
-        ...draft,
-      },
-    ])
+    setIsSubmitting(true)
+    setError('')
+
+    try {
+      const result = await requestJson<UserResponse>('/users', {
+        method: 'POST',
+        body: JSON.stringify(draft),
+      })
+
+      setResponse(JSON.stringify(result, null, 2))
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'User request failed')
+    } finally {
+      setIsSubmitting(false)
+    }
+
     setDraft(emptyDraft)
   }
 
@@ -54,10 +51,16 @@ export function UsersPage() {
       <section className="page-header">
         <div>
           <p className="eyebrow">Admin</p>
-          <h2>Créer des users et vérifier les rôles.</h2>
+          <h2>Créer un user via l’API.</h2>
           <p className="lede">
-            L’admin peut simuler l’onboarding d’un user avant de brancher le backend.
+            Le formulaire envoie un user conforme au backend Better Auth et affiche la
+            réponse brute.
           </p>
+        </div>
+        <div className="tag-row">
+          <span className="tag">POST /users</span>
+          <span className="tag">Role enum</span>
+          <span className="tag">Password min 8</span>
         </div>
       </section>
 
@@ -72,7 +75,6 @@ export function UsersPage() {
                   required
                   value={draft.name}
                   onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                  placeholder="Nadia Leroy"
                 />
               </label>
 
@@ -83,7 +85,6 @@ export function UsersPage() {
                   type="email"
                   value={draft.email}
                   onChange={(event) => setDraft({ ...draft, email: event.target.value })}
-                  placeholder="nadia@school.local"
                 />
               </label>
 
@@ -100,44 +101,33 @@ export function UsersPage() {
               </label>
 
               <label className="field">
-                <span>Statut</span>
-                <select
-                  value={draft.status}
-                  onChange={(event) => setDraft({ ...draft, status: event.target.value })}
-                >
-                  <option value="Actif">Actif</option>
-                  <option value="Invité">Invité</option>
-                  <option value="Suspendu">Suspendu</option>
-                </select>
+                <span>Mot de passe</span>
+                <input
+                  required
+                  type="password"
+                  value={draft.password}
+                  onChange={(event) => setDraft({ ...draft, password: event.target.value })}
+                />
               </label>
             </div>
 
             <div className="form-actions">
-              <button className="button" type="submit">
-                Créer le user
+              <button className="button" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Envoi...' : 'Créer le user'}
               </button>
-              <p className="helper-text">Le QA peut vérifier les permissions à partir d’ici.</p>
+              <p className="helper-text">Le backend renvoie la payload complète pour contrôle.</p>
             </div>
+            {error ? <p className="form-error">{error}</p> : null}
           </form>
         </article>
 
         <article className="panel">
-          <p className="eyebrow">Répertoire</p>
-          <div className="record-list">
-            {users.map((user) => (
-              <div key={user.id} className="record-item">
-                <div>
-                  <p className="record-title">{user.name}</p>
-                  <p className="record-meta">
-                    {user.email} · {user.status}
-                  </p>
-                </div>
-                <div className="record-side">
-                  <span className="tag">{user.role}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="eyebrow">Réponse API</p>
+          {response ? (
+            <pre className="response-block">{response}</pre>
+          ) : (
+            <p className="helper-text">Crée un user pour afficher la réponse du serveur.</p>
+          )}
         </article>
       </section>
     </div>

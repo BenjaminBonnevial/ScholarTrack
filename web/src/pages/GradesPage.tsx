@@ -1,63 +1,53 @@
-import { useMemo, useState } from 'react'
-
-type Grade = {
-  id: string
-  student: string
-  course: string
-  score: string
-  weight: string
-}
-
-const initialGrades: Grade[] = [
-  {
-    id: 'grade-1',
-    student: 'Lina Robert',
-    course: 'DEV-310',
-    score: '87',
-    weight: '40',
-  },
-  {
-    id: 'grade-2',
-    student: 'Hugo Petit',
-    course: 'MATH-201',
-    score: '74',
-    weight: '60',
-  },
-]
+import { useState } from 'react'
+import { requestJson } from '../lib/api'
 
 const emptyDraft = {
-  student: '',
-  course: '',
-  score: '80',
-  weight: '50',
+  courseId: '33333333-3333-3333-3333-333333333333',
+  studentId: '44444444-4444-4444-4444-444444444444',
+  evaluationType: 'Homework',
+  score: '16',
+}
+
+type GradeResponse = {
+  action: string
+  payload: {
+    courseId: string
+    studentId: string
+    evaluationType?: string
+    score: number
+  }
 }
 
 export function GradesPage() {
-  const [grades, setGrades] = useState(initialGrades)
   const [draft, setDraft] = useState(emptyDraft)
+  const [response, setResponse] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const average = useMemo(() => {
-    if (!grades.length) {
-      return '0.0'
-    }
-
-    const total = grades.reduce(
-      (sum, grade) => sum + Number(grade.score) * (Number(grade.weight) / 100),
-      0,
-    )
-    return (total / grades.length).toFixed(1)
-  }, [grades])
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    setGrades((currentGrades) => [
-      ...currentGrades,
-      {
-        id: `grade-${Date.now()}`,
-        ...draft,
-      },
-    ])
+    setIsSubmitting(true)
+    setError('')
+
+    try {
+      const result = await requestJson<GradeResponse>('/grades', {
+        method: 'POST',
+        body: JSON.stringify({
+          courseId: draft.courseId,
+          studentId: draft.studentId,
+          evaluationType: draft.evaluationType,
+          score: Number(draft.score),
+        }),
+      })
+
+      setResponse(JSON.stringify(result, null, 2))
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Grade request failed')
+    } finally {
+      setIsSubmitting(false)
+    }
+
     setDraft(emptyDraft)
   }
 
@@ -66,15 +56,15 @@ export function GradesPage() {
       <section className="page-header">
         <div>
           <p className="eyebrow">Performance</p>
-          <h2>Saisir les notes et suivre la moyenne pondérée.</h2>
+          <h2>Créer une note via l’API.</h2>
           <p className="lede">
-            Cette page prépare le terrain pour le calcul des moyennes et l’import CSV.
+            Le formulaire envoie un score réel au backend et affiche la réponse retournée.
           </p>
         </div>
-        <div className="panel panel-tight">
-          <p className="metric-label">Moyenne locale</p>
-          <strong className="big-number">{average}</strong>
-          <span className="helper-text">sur les entrées de démonstration</span>
+        <div className="tag-row">
+          <span className="tag">POST /grades</span>
+          <span className="tag">score 0-20</span>
+          <span className="tag">UUID course/student</span>
         </div>
       </section>
 
@@ -84,76 +74,63 @@ export function GradesPage() {
           <form className="form-stack" onSubmit={handleSubmit}>
             <div className="form-grid">
               <label className="field">
-                <span>Student</span>
-                <input
-                  required
-                  value={draft.student}
-                  onChange={(event) => setDraft({ ...draft, student: event.target.value })}
-                  placeholder="Nora Ali"
-                />
-              </label>
-
-              <label className="field">
                 <span>Cours</span>
                 <input
                   required
-                  value={draft.course}
-                  onChange={(event) => setDraft({ ...draft, course: event.target.value })}
-                  placeholder="DEV-310"
+                  value={draft.courseId}
+                  onChange={(event) => setDraft({ ...draft, courseId: event.target.value })}
                 />
               </label>
 
               <label className="field">
-                <span>Score</span>
+                <span>Student ID</span>
+                <input
+                  required
+                  value={draft.studentId}
+                  onChange={(event) => setDraft({ ...draft, studentId: event.target.value })}
+                />
+              </label>
+
+              <label className="field">
+                <span>Type d’évaluation</span>
+                <input
+                  value={draft.evaluationType}
+                  onChange={(event) =>
+                    setDraft({ ...draft, evaluationType: event.target.value })
+                  }
+                />
+              </label>
+
+              <label className="field">
+                <span>Score /20</span>
                 <input
                   required
                   type="number"
                   min="0"
-                  max="100"
+                  max="20"
                   value={draft.score}
                   onChange={(event) => setDraft({ ...draft, score: event.target.value })}
-                />
-              </label>
-
-              <label className="field">
-                <span>Poids</span>
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={draft.weight}
-                  onChange={(event) => setDraft({ ...draft, weight: event.target.value })}
                 />
               </label>
             </div>
 
             <div className="form-actions">
-              <button className="button" type="submit">
-                Ajouter la note
+              <button className="button" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Envoi...' : 'Ajouter la note'}
               </button>
-              <p className="helper-text">Le calcul pondéré se met à jour en local.</p>
+              <p className="helper-text">Le backend renvoie la payload complète pour contrôle.</p>
             </div>
+            {error ? <p className="form-error">{error}</p> : null}
           </form>
         </article>
 
         <article className="panel">
-          <p className="eyebrow">Historique</p>
-          <div className="record-list">
-            {grades.map((grade) => (
-              <div key={grade.id} className="record-item">
-                <div>
-                  <p className="record-title">
-                    {grade.student} · {grade.course}
-                  </p>
-                  <p className="record-meta">Poids {grade.weight}%</p>
-                </div>
-                <div className="record-side">
-                  <span className="tag">{grade.score}/100</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="eyebrow">Réponse API</p>
+          {response ? (
+            <pre className="response-block">{response}</pre>
+          ) : (
+            <p className="helper-text">Ajoute une note pour afficher la réponse du serveur.</p>
+          )}
         </article>
       </section>
     </div>
