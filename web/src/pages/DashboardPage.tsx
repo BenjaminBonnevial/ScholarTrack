@@ -1,43 +1,78 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { requestJson } from '../lib/api'
+import { useSession } from '../lib/auth-client'
 
-const metrics = [
-  { label: 'Cours actifs', value: '18', detail: '4 en brouillon' },
-  { label: 'Users', value: '247', detail: '31 admins/teachers' },
-  { label: 'Sessions notées', value: '96%', detail: 'complétées aujourd’hui' },
-  { label: 'Présences à risque', value: '12', detail: 'à relancer' },
-]
+type Stats = {
+  totalCourses: number
+  totalEnrollments: number
+  atRiskCount: number
+  totalGrades: number
+  averageScore: number | null
+}
 
 const quickChecks = [
-  'Créer un cours puis l’ouvrir dans la page Cours.',
-  'Ajouter un user et vérifier le tri par rôle.',
-  'Saisir une note ou une présence depuis les pages métiers.',
-  'Tester la connexion et la création de compte.',
+  'Create a course and open it in the Courses page.',
+  'Add a user and verify role-based filtering.',
+  'Record a grade or attendance from the business pages.',
+  'Test login and account creation.',
 ]
 
 export function DashboardPage() {
+  const { data: session } = useSession()
+  const isAdmin = (session as any)?.role === 'ADMIN'
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!isAdmin) return
+    setLoading(true)
+    requestJson<Stats>('/admin/stats')
+      .then((data) => setStats(data))
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false))
+  }, [isAdmin])
+
+  const metrics = stats
+    ? [
+        { label: 'Courses', value: String(stats.totalCourses), detail: 'total' },
+        { label: 'Enrollments', value: String(stats.totalEnrollments), detail: 'enrolled students' },
+        {
+          label: 'Overall average',
+          value: stats.averageScore != null ? stats.averageScore.toFixed(1) : '—',
+          detail: `across ${stats.totalGrades} grades`,
+        },
+        { label: 'At risk', value: String(stats.atRiskCount), detail: 'critical attendance' },
+      ]
+    : [
+        { label: 'Active courses', value: '—', detail: '' },
+        { label: 'Enrollments', value: '—', detail: '' },
+        { label: 'Overall average', value: '—', detail: '' },
+        { label: 'At risk', value: '—', detail: '' },
+      ]
+
   return (
     <div className="page-stack">
       <section className="hero-panel">
         <div className="panel panel-primary">
           <p className="eyebrow">Vue générale</p>
-          <h2>Tout ce qu’il faut pour valider l’application depuis le navigateur.</h2>
+          <h2>Everything you need to validate the application from the browser.</h2>
           <p className="lede">
-            Le front expose maintenant des écrans pour l’authentification et pour les
-            opérations admin les plus fréquentes. Le but est de tester les parcours
-            métier sans ouvrir Postman.
+            The frontend exposes screens for authentication and the most common
+            admin operations. Test business flows without opening Postman.
           </p>
           <div className="action-row">
             <Link className="button" to="/courses">
-              Gérer les cours
+              Manage courses
             </Link>
             <Link className="button button-secondary" to="/auth/login">
-              Ouvrir l’auth
+              Ouvrir l'auth
             </Link>
           </div>
         </div>
 
         <div className="panel panel-spotlight">
-          <p className="eyebrow">Focus QA</p>
+          <p className="eyebrow">Global stats {loading ? '(loading…)' : ''}</p>
           <div className="stacked-metrics">
             {metrics.map((metric) => (
               <article key={metric.label} className="metric-inline">
@@ -65,7 +100,7 @@ export function DashboardPage() {
       <section className="list-grid">
         <article className="panel">
           <p className="eyebrow">Checklist rapide</p>
-          <h2>Parcours à tester en quelques clics.</h2>
+          <h2>Flows to test in a few clicks.</h2>
           <ul className="feature-list feature-list-dark">
             {quickChecks.map((item) => (
               <li key={item}>{item}</li>
@@ -77,18 +112,10 @@ export function DashboardPage() {
           <p className="eyebrow">Navigation</p>
           <h2>Accès direct aux pages utiles.</h2>
           <div className="link-grid">
-            <Link className="soft-link" to="/courses">
-              Courses
-            </Link>
-            <Link className="soft-link" to="/users">
-              Users
-            </Link>
-            <Link className="soft-link" to="/grades">
-              Grades
-            </Link>
-            <Link className="soft-link" to="/attendance">
-              Attendance
-            </Link>
+            <Link className="soft-link" to="/courses">Courses</Link>
+            <Link className="soft-link" to="/users">Users</Link>
+            <Link className="soft-link" to="/grades">Grades</Link>
+            <Link className="soft-link" to="/attendance">Attendance</Link>
           </div>
         </article>
       </section>
