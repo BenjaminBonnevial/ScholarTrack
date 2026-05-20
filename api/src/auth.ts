@@ -25,11 +25,13 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    customSession(({ user, session }) => {
+    customSession(async ({ user, session }) => {
+      const role = (user as typeof user & { role?: string }).role ?? "STUDENT";
+
       return {
         user,
         session,
-        role: user.role,
+        role,
       };
     }),
   ],
