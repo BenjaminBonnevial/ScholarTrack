@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Controller, Get, Req } from "@nestjs/common";
+import type { Request } from "express";
+import { AppService } from "./app.service";
 
 @Controller()
 export class AppController {
@@ -8,5 +9,13 @@ export class AppController {
   @Get()
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  @Get("protected")
+  getProtected(@Req() request: Request) {
+    return {
+      message: "Authenticated access granted.",
+      session: request.auth,
+    };
   }
 }
