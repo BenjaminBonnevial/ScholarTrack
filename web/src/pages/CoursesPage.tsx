@@ -15,7 +15,6 @@ const emptyDraft = {
 
 export function CoursesPage() {
   const [draft, setDraft] = useState(emptyDraft)
-  const [response, setResponse] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [courses, setCourses] = useState<any[]>([])
@@ -28,11 +27,11 @@ export function CoursesPage() {
   useEffect(() => {
     void fetchCourses()
     void requestJson<any>('/semesters').then((d) => {
-      const list = Array.isArray(d) ? d : d?.items ?? []
+      const list = Array.isArray(d) ? d : (d?.items ?? [])
       setSemesters(list)
     })
     void requestJson<any>('/users?role=TEACHER&limit=100').then((d) => {
-      const list = Array.isArray(d) ? d : d?.items ?? []
+      const list = Array.isArray(d) ? d : (d?.items ?? [])
       setTeachers(list)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,7 +42,7 @@ export function CoursesPage() {
     setIsSubmitting(true)
     setError('')
     try {
-      const result = await requestJson<any>('/courses', {
+      await requestJson<any>('/courses', {
         method: 'POST',
         body: JSON.stringify({
           code: draft.code,
@@ -54,11 +53,10 @@ export function CoursesPage() {
           semesterId: draft.semesterId,
         }),
       })
-      setResponse(JSON.stringify(result, null, 2))
       setDraft(emptyDraft)
       await fetchCourses()
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Course request failed')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Course creation failed')
     } finally {
       setIsSubmitting(false)
     }
@@ -68,8 +66,7 @@ export function CoursesPage() {
     setIsLoading(true)
     try {
       const data = await requestJson<any>('/courses')
-      const list = Array.isArray(data) ? data : data?.items ?? []
-      setCourses(list)
+      setCourses(Array.isArray(data) ? data : (data?.items ?? []))
     } catch {
       setCourses([])
     } finally {
@@ -84,8 +81,6 @@ export function CoursesPage() {
       title: course.title ?? '',
       description: course.description ?? '',
       capacity: String(course.capacity ?? ''),
-      teacherId: course.teacherId ?? course.teacher?.id ?? '',
-      semesterId: course.semesterId ?? course.semester?.id ?? '',
     })
   }
 
@@ -121,25 +116,21 @@ export function CoursesPage() {
 
   return (
     <div className="page-stack">
-      <section className="page-header">
+      <div className="page-header">
         <div>
-          <p className="eyebrow">Admin</p>
-          <h2>Manage courses.</h2>
-          <p className="lede">
-            Create, update and delete courses. Semesters and teachers are loaded
-            from the API.
-          </p>
+          <h2 className="page-title">Courses</h2>
+          <p className="page-subtitle">Create, edit and delete courses.</p>
         </div>
         <div className="tag-row">
           <span className="tag">POST /courses</span>
           <span className="tag">PATCH /courses/:id</span>
           <span className="tag">DELETE /courses/:id</span>
         </div>
-      </section>
+      </div>
 
-      <section className="list-grid">
-        <article className="panel">
-          <p className="eyebrow">New course</p>
+      <div className="grid-2">
+        <div className="panel">
+          <p className="panel-title">New course</p>
           <form className="form-stack" onSubmit={handleSubmit}>
             <div className="form-grid">
               <label className="field">
@@ -147,7 +138,7 @@ export function CoursesPage() {
                 <input
                   required
                   value={draft.code}
-                  placeholder="EX: MATH101"
+                  placeholder="MATH101"
                   onChange={(e) => setDraft({ ...draft, code: e.target.value.toUpperCase() })}
                 />
               </label>
@@ -188,7 +179,7 @@ export function CoursesPage() {
                   value={draft.semesterId}
                   onChange={(e) => setDraft({ ...draft, semesterId: e.target.value })}
                 >
-                  <option value="">— Choisir —</option>
+                  <option value="">— Select —</option>
                   {semesters.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
                   ))}
@@ -201,29 +192,30 @@ export function CoursesPage() {
                   value={draft.teacherId}
                   onChange={(e) => setDraft({ ...draft, teacherId: e.target.value })}
                 >
-                  <option value="">— Auto (yourself) —</option>
+                  <option value="">— Assign automatically —</option>
                   {teachers.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
+                    <option key={t.id} value={t.id}>{t.name} — {t.email}</option>
                   ))}
                 </select>
               </label>
             </div>
 
+            {error && <p className="form-error">{error}</p>}
+
             <div className="form-actions">
               <button className="button" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Sending...' : 'Create course'}
+                {isSubmitting ? 'Creating…' : 'Create course'}
               </button>
             </div>
-            {error ? <p className="form-error">{error}</p> : null}
           </form>
-        </article>
+        </div>
 
-        <article className="panel">
-          <p className="eyebrow">Existing courses</p>
+        <div className="panel">
+          <p className="panel-title">Courses ({courses.length})</p>
           {isLoading ? (
             <p className="helper-text">Loading…</p>
           ) : courses.length === 0 ? (
-            <p className="helper-text">No courses found.</p>
+            <p className="helper-text">No courses yet.</p>
           ) : (
             <ul className="list-plain">
               {courses.map((c) => (
@@ -231,9 +223,9 @@ export function CoursesPage() {
                   <div>
                     <strong>{c.title}</strong>
                     <div className="muted">
-                      {c.code} — {c.semester?.name ?? c.semesterId}
+                      {c.code} · {c.semester?.name ?? '—'}
                       {c._count?.enrollments != null
-                        ? ` — ${c._count.enrollments}/${c.capacity} inscrits`
+                        ? ` · ${c._count.enrollments}/${c.capacity} enrolled`
                         : ''}
                     </div>
                   </div>
@@ -241,10 +233,7 @@ export function CoursesPage() {
                     <button className="button button-ghost" onClick={() => startEdit(c)}>
                       Edit
                     </button>
-                    <button
-                      className="button button-danger"
-                      onClick={() => handleDelete(c.id)}
-                    >
+                    <button className="button button-danger" onClick={() => handleDelete(c.id)}>
                       Delete
                     </button>
                   </div>
@@ -252,19 +241,12 @@ export function CoursesPage() {
               ))}
             </ul>
           )}
-        </article>
+        </div>
+      </div>
 
-        {response ? (
-          <article className="panel">
-            <p className="eyebrow">API response</p>
-            <pre className="response-block">{response}</pre>
-          </article>
-        ) : null}
-      </section>
-
-      {editId && editDraft ? (
-        <section className="panel">
-          <p className="eyebrow">Edit course</p>
+      {editId && editDraft && (
+        <div className="panel">
+          <p className="panel-title">Edit course</p>
           <div className="form-grid">
             <label className="field">
               <span>Code</span>
@@ -296,20 +278,15 @@ export function CoursesPage() {
                 onChange={(e) => setEditDraft({ ...editDraft, capacity: e.target.value })}
               />
             </label>
-            <div className="form-actions">
-              <button className="button" onClick={() => void saveEdit()}>
-                Save
-              </button>
-              <button
-                className="button button-ghost"
-                onClick={() => { setEditId(null); setEditDraft(null) }}
-              >
+            <div className="form-actions form-grid-span-2">
+              <button className="button" onClick={() => void saveEdit()}>Save</button>
+              <button className="button button-ghost" onClick={() => { setEditId(null); setEditDraft(null) }}>
                 Cancel
               </button>
             </div>
           </div>
-        </section>
-      ) : null}
+        </div>
+      )}
     </div>
   )
 }

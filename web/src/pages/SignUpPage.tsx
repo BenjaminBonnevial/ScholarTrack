@@ -8,63 +8,66 @@ export function SignUpPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
     setError('')
-
-    await authClient.signUp.email(
-      {
-        name,
-        email,
-        password,
-      },
-      {
-        onSuccess: () => {
-          navigate('/')
-        },
-        onError: ({ error: requestError }) => {
-          setError(requestError.message)
-        },
-      },
-    )
+    setLoading(true)
+    const { error: signUpError } = await authClient.signUp.email({ name, email, password })
+    setLoading(false)
+    if (signUpError) {
+      setError(signUpError.message ?? 'Sign up failed')
+    } else {
+      navigate('/', { replace: true })
+    }
   }
 
   return (
-    <AuthShell
-      title="Créer un compte"
-      subtitle="Prépare un user de test avant de passer à l’auth réelle et aux rôles."
-    >
-      <form className="form-stack auth-form" onSubmit={handleSubmit}>
+    <AuthShell title="Create an account">
+      <form className="auth-form" onSubmit={handleSubmit}>
         <label className="field">
-          <span>Nom</span>
-          <input value={name} onChange={(event) => setName(event.target.value)} />
+          <span>Full name</span>
+          <input
+            required
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </label>
 
         <label className="field">
           <span>Email</span>
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-        </label>
-
-        <label className="field">
-          <span>Mot de passe</span>
           <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            required
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </label>
 
-        {error ? <p className="form-error">{error}</p> : null}
+        <label className="field">
+          <span>Password</span>
+          <input
+            required
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+
+        {error && <p className="form-error">{error}</p>}
 
         <div className="form-actions">
-          <button className="button" type="submit">
-            Créer le compte
+          <button className="button" type="submit" disabled={loading}>
+            {loading ? 'Creating…' : 'Create account'}
           </button>
-          <Link className="button button-secondary" to="/auth/login">
-            J’ai déjà un compte
+          <Link className="button-secondary button" to="/auth/login">
+            Already have an account
           </Link>
         </div>
       </form>

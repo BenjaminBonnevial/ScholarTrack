@@ -13,12 +13,8 @@ export function RequireSession({ children, allowedRoles }: RequireSessionProps) 
 
   if (isPending) {
     return (
-      <div className="auth-shell auth-shell-simple">
-        <section className="auth-card auth-card-wide">
-          <p className="eyebrow">Session</p>
-          <h1>Chargement de l’authentification...</h1>
-          <p className="lede">On vérifie la session avant d’ouvrir le cockpit.</p>
-        </section>
+      <div className="loading-screen">
+        <p className="loading-card">Loading…</p>
       </div>
     )
   }
