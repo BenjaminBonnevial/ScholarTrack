@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, NestMiddleware } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, NestMiddleware, Optional } from "@nestjs/common";
 import type { NextFunction, Request, Response } from "express";
 
 type RateLimitWindow = {
@@ -13,7 +13,7 @@ export class RateLimitMiddleware implements NestMiddleware {
   private readonly maxRequests: number;
   private readonly windowMs: number;
 
-  constructor(maxRequests?: number, windowMs?: number) {
+  constructor(@Optional() maxRequests?: number, @Optional() windowMs?: number) {
     this.maxRequests = maxRequests ?? Number(process.env.RATE_LIMIT_MAX_REQUESTS ?? 100);
     this.windowMs = windowMs ?? Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000);
   }
