@@ -1,4 +1,6 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Post, UsePipes } from "@nestjs/common";
+import { Public } from "../auth/decorators/roles.decorator";
+import { CourseCapacityPipe, type CourseCapacityInput } from "../common/pipes/course-capacity.pipe";
 import { EnrollStudentDto } from "../common/dto/enrollment.dto";
 import { EnrollmentsService } from "./enrollments.service";
 
@@ -9,5 +11,15 @@ export class EnrollmentsController {
   @Post()
   enroll(@Body() dto: EnrollStudentDto) {
     return this.enrollmentsService.enroll(dto);
+  }
+
+  @Post("capacity-check")
+  @Public()
+  @UsePipes(new CourseCapacityPipe())
+  checkCapacity(@Body() body: CourseCapacityInput) {
+    return {
+      action: "capacityCheck",
+      payload: body,
+    };
   }
 }
