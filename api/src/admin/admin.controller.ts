@@ -1,5 +1,6 @@
 import { Body, Controller, Post, Query } from "@nestjs/common";
 import { PaginationDto } from "../common/dto/pagination.dto";
+import { AdminService } from "./admin.service";
 
 @Controller("admin")
 export class AdminController {

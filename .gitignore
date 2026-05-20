@@ -1,5 +1,8 @@
 .env
+BAZAR.md
 AGENTS.md
 GEMINI.md
 /api/node_modules
+/api/dist
 /web/node_modules
+/web/dist
