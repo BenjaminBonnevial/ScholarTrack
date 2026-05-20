@@ -13,6 +13,8 @@ export default defineConfig({
       '/grades': 'http://localhost:3000',
       '/attendance': 'http://localhost:3000',
       '/enrollments': 'http://localhost:3000',
+      '/semesters': 'http://localhost:3000',
+      '/admin': 'http://localhost:3000',
     },
   },
 })
