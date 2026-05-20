@@ -8,7 +8,7 @@ import { Public } from "./decorators/roles.decorator";
 export class AuthController {
   private readonly handler = toNodeHandler(auth);
 
-  @All(["api/auth", "api/auth/*"])
+  @All(["api/auth", "api/auth/*path"])
   @Public()
   async handle(@Req() req: Request, @Res() res: Response): Promise<void> {
     await this.handler(req, res);
