@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { requestJson } from '../lib/api'
 
 const emptyDraft = {
@@ -27,6 +27,10 @@ export function CoursesPage() {
   const [response, setResponse] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [courses, setCourses] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState<any | null>(null)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -57,6 +61,73 @@ export function CoursesPage() {
     }
 
     setDraft(emptyDraft)
+    await fetchCourses()
+  }
+
+  useEffect(() => {
+    void fetchCourses()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function fetchCourses() {
+    setIsLoading(true)
+    try {
+      const data = await requestJson<any>('/courses')
+      if (Array.isArray(data)) setCourses(data)
+      else if (Array.isArray(data.payload)) setCourses(data.payload)
+      else if (Array.isArray(data.courses)) setCourses(data.courses)
+      else setCourses([])
+    } catch (err) {
+      // ignore for now
+      setCourses([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  async function startEdit(course: any) {
+    setEditId(course.id ?? course.payload?.id ?? null)
+    setEditDraft({
+      code: course.code ?? course.payload?.code,
+      title: course.title ?? course.payload?.title,
+      description: course.description ?? course.payload?.description,
+      capacity: String(course.capacity ?? course.payload?.capacity ?? ''),
+      teacherId: course.teacherId ?? course.payload?.teacherId,
+      semesterId: course.semesterId ?? course.payload?.semesterId,
+    })
+  }
+
+  async function saveEdit() {
+    if (!editId || !editDraft) return
+    try {
+      await requestJson(`/courses/${editId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          code: editDraft.code,
+          title: editDraft.title,
+          description: editDraft.description,
+          capacity: Number(editDraft.capacity),
+          teacherId: editDraft.teacherId,
+          semesterId: editDraft.semesterId,
+        }),
+      })
+      setEditId(null)
+      setEditDraft(null)
+      await fetchCourses()
+    } catch (e) {
+      // show error inline
+      setError(e instanceof Error ? e.message : 'Update failed')
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Supprimer ce cours ?')) return
+    try {
+      await requestJson(`/courses/${id}`, { method: 'DELETE' })
+      await fetchCourses()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed')
+    }
   }
 
   return (
@@ -153,6 +224,39 @@ export function CoursesPage() {
             {error ? <p className="form-error">{error}</p> : null}
           </form>
         </article>
+        <article className="panel">
+          <p className="eyebrow">Cours existants</p>
+          {isLoading ? (
+            <p className="helper-text">Chargement…</p>
+          ) : courses.length === 0 ? (
+            <p className="helper-text">Aucun cours récupéré.</p>
+          ) : (
+            <ul className="list-plain">
+              {courses.map((c) => {
+                const id = c.id ?? c.payload?.id ?? c.code
+                return (
+                  <li key={id} className="list-item">
+                    <div>
+                      <strong>{c.title ?? c.payload?.title ?? c.code}</strong>
+                      <div className="muted">{c.code ?? c.payload?.code}</div>
+                    </div>
+                    <div className="list-actions">
+                      <button className="button button-ghost" onClick={() => startEdit(c)}>
+                        Éditer
+                      </button>
+                      <button
+                        className="button button-danger"
+                        onClick={() => handleDelete(id)}
+                      >
+                        Supprimer
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </article>
 
         <article className="panel">
           <p className="eyebrow">Réponse API</p>
@@ -163,6 +267,34 @@ export function CoursesPage() {
           )}
         </article>
       </section>
+
+      {editId && editDraft ? (
+        <section className="panel">
+          <p className="eyebrow">Édition</p>
+          <div className="form-grid">
+            <label className="field">
+              <span>Code</span>
+              <input value={editDraft.code} onChange={(e) => setEditDraft({ ...editDraft, code: e.target.value.toUpperCase() })} />
+            </label>
+            <label className="field">
+              <span>Intitulé</span>
+              <input value={editDraft.title} onChange={(e) => setEditDraft({ ...editDraft, title: e.target.value })} />
+            </label>
+            <label className="field form-grid-span-2">
+              <span>Description</span>
+              <textarea value={editDraft.description} onChange={(e) => setEditDraft({ ...editDraft, description: e.target.value })} />
+            </label>
+            <div className="form-actions">
+              <button className="button" onClick={() => void saveEdit()}>
+                Enregistrer
+              </button>
+              <button className="button button-ghost" onClick={() => { setEditId(null); setEditDraft(null) }}>
+                Annuler
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   )
 }

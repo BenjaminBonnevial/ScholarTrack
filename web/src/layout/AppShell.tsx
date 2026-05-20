@@ -4,10 +4,10 @@ import { authClient, useSession } from '../lib/auth-client'
 
 const navigation = [
   { to: '/', label: 'Dashboard' },
-  { to: '/courses', label: 'Cours' },
-  { to: '/users', label: 'Users' },
-  { to: '/grades', label: 'Notes' },
-  { to: '/attendance', label: 'Présences' },
+  { to: '/courses', label: 'Cours', allowedRoles: ['TEACHER', 'ADMIN'] },
+  { to: '/users', label: 'Users', allowedRoles: ['ADMIN'] },
+  { to: '/grades', label: 'Notes', allowedRoles: ['TEACHER', 'ADMIN'] },
+  { to: '/attendance', label: 'Présences', allowedRoles: ['TEACHER', 'ADMIN'] },
 ]
 
 function ActionLink({ to, children }: { to: string; children: ReactNode }) {
@@ -45,18 +45,21 @@ export function AppShell() {
         </Link>
 
         <nav className="sidebar-nav" aria-label="Navigation principale">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                `nav-link${isActive ? ' nav-link-active' : ''}`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {navigation.map((item) => {
+            if (item.allowedRoles && !item.allowedRoles.includes(role)) return null
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  `nav-link${isActive ? ' nav-link-active' : ''}`
+                }
+              >
+                {item.label}
+              </NavLink>
+            )
+          })}
         </nav>
 
         <div className="sidebar-card">
@@ -92,12 +95,16 @@ export function AppShell() {
           </div>
 
           <div className="topbar-actions">
-            <Link className="button" to="/courses">
-              Nouveau cours
-            </Link>
-            <Link className="button button-ghost" to="/users">
-              Nouveau user
-            </Link>
+              {['TEACHER', 'ADMIN'].includes(role) ? (
+                <Link className="button" to="/courses">
+                  Nouveau cours
+                </Link>
+              ) : null}
+              {role === 'ADMIN' ? (
+                <Link className="button button-ghost" to="/users">
+                  Nouveau user
+                </Link>
+              ) : null}
           </div>
         </header>
 

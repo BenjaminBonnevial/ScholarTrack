@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { requestJson } from '../lib/api'
 
 const emptyDraft = {
@@ -23,6 +23,10 @@ export function UsersPage() {
   const [response, setResponse] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [users, setUsers] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editRole, setEditRole] = useState<string | null>(null)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -44,6 +48,59 @@ export function UsersPage() {
     }
 
     setDraft(emptyDraft)
+    await fetchUsers()
+  }
+
+  useEffect(() => {
+    void fetchUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function fetchUsers() {
+    setIsLoading(true)
+    try {
+      const data = await requestJson<any>('/users')
+      if (Array.isArray(data)) setUsers(data)
+      else if (Array.isArray(data.payload)) setUsers(data.payload)
+      else if (Array.isArray(data.users)) setUsers(data.users)
+      else setUsers([])
+    } catch (e) {
+      setUsers([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function startEdit(user: any) {
+    const id = user.id ?? user.payload?.id ?? user.email
+    setEditId(id)
+    setEditRole(user.role ?? user.payload?.role ?? 'STUDENT')
+  }
+
+  async function saveEdit() {
+    if (!editId || !editRole) return
+    try {
+      // backend may expect PUT /users/:id/role or PATCH /users/:id
+      await requestJson(`/users/${editId}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role: editRole }),
+      })
+      setEditId(null)
+      setEditRole(null)
+      await fetchUsers()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Update failed')
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Supprimer cet utilisateur ?')) return
+    try {
+      await requestJson(`/users/${id}`, { method: 'DELETE' })
+      await fetchUsers()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed')
+    }
   }
 
   return (
@@ -120,6 +177,36 @@ export function UsersPage() {
             {error ? <p className="form-error">{error}</p> : null}
           </form>
         </article>
+        <article className="panel">
+          <p className="eyebrow">Utilisateurs</p>
+          {isLoading ? (
+            <p className="helper-text">Chargement…</p>
+          ) : users.length === 0 ? (
+            <p className="helper-text">Aucun utilisateur récupéré.</p>
+          ) : (
+            <ul className="list-plain">
+              {users.map((u) => {
+                const id = u.id ?? u.payload?.id ?? u.email
+                return (
+                  <li key={id} className="list-item">
+                    <div>
+                      <strong>{u.name ?? u.payload?.name ?? u.email}</strong>
+                      <div className="muted">{u.email ?? u.payload?.email}</div>
+                    </div>
+                    <div className="list-actions">
+                      <button className="button button-ghost" onClick={() => startEdit(u)}>
+                        Rôle
+                      </button>
+                      <button className="button button-danger" onClick={() => handleDelete(id)}>
+                        Supprimer
+                      </button>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </article>
 
         <article className="panel">
           <p className="eyebrow">Réponse API</p>
@@ -130,6 +217,30 @@ export function UsersPage() {
           )}
         </article>
       </section>
+
+      {editId ? (
+        <section className="panel">
+          <p className="eyebrow">Mettre à jour le rôle</p>
+          <div className="form-grid">
+            <label className="field">
+              <span>Rôle</span>
+              <select value={editRole ?? ''} onChange={(e) => setEditRole(e.target.value)}>
+                <option value="STUDENT">Student</option>
+                <option value="TEACHER">Teacher</option>
+                <option value="ADMIN">Admin</option>
+              </select>
+            </label>
+            <div className="form-actions">
+              <button className="button" onClick={() => void saveEdit()}>
+                Enregistrer
+              </button>
+              <button className="button button-ghost" onClick={() => { setEditId(null); setEditRole(null) }}>
+                Annuler
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
     </div>
   )
 }

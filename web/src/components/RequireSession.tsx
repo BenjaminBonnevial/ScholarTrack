@@ -4,9 +4,10 @@ import { useSession } from '../lib/auth-client'
 
 interface RequireSessionProps {
   children: ReactNode
+  allowedRoles?: string[]
 }
 
-export function RequireSession({ children }: RequireSessionProps) {
+export function RequireSession({ children, allowedRoles }: RequireSessionProps) {
   const location = useLocation()
   const { data: session, isPending } = useSession()
 
@@ -24,6 +25,13 @@ export function RequireSession({ children }: RequireSessionProps) {
 
   if (!session) {
     return <Navigate to="/auth/login" replace state={{ from: location }} />
+  }
+
+  if (allowedRoles && allowedRoles.length > 0) {
+    const role = (session as { role?: string } | null | undefined)?.role ?? null
+    if (!role || !allowedRoles.includes(role)) {
+      return <Navigate to="/not-authorized" replace />
+    }
   }
 
   return children
