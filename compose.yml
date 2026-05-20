@@ -30,6 +30,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/scholartrack?schema=public
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-replace-with-32-plus-char-secret}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS:-http://localhost:8080}
     ports:
       - "3000:3000"
 

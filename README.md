@@ -27,6 +27,7 @@ Copy `.env.example` to `.env` at the root and fill in:
 | `DATABASE_URL` | PostgreSQL URL, e.g. `postgresql://postgres:postgres@localhost:5432/scholartrack` |
 | `BETTER_AUTH_SECRET` | Secret key 32+ chars — `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | API base URL, e.g. `http://localhost:3000` |
+| `BETTER_AUTH_TRUSTED_ORIGINS` | Comma-separated trusted frontend origins, e.g. `http://localhost:8080` |
 | `RATE_LIMIT_MAX_REQUESTS` | (optional) Max requests per window (default: 100) |
 | `RATE_LIMIT_WINDOW_MS` | (optional) Window duration in ms (default: 60 000) |
 
