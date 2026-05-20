@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import { RequireSession } from './components/RequireSession'
 import { AppShell } from './layout/AppShell'
 import { AttendancePage } from './pages/AttendancePage'
 import { CoursesPage } from './pages/CoursesPage'
@@ -13,7 +14,13 @@ import { UsersPage } from './pages/UsersPage'
 function App() {
   return (
     <Routes>
-      <Route element={<AppShell />}>
+      <Route
+        element={
+          <RequireSession>
+            <AppShell />
+          </RequireSession>
+        }
+      >
         <Route index element={<DashboardPage />} />
         <Route path="courses" element={<CoursesPage />} />
         <Route path="users" element={<UsersPage />} />

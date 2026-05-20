@@ -175,6 +175,10 @@ h3,
   font-weight: 600;
 }
 
+.sidebar-card-copy {
+  margin: 4px 0 0;
+}
+
 .sidebar-actions,
 .action-row,
 .form-actions,
@@ -339,6 +343,15 @@ h3,
 .helper-text {
   margin: 0;
   font-size: 0.95rem;
+}
+
+.form-error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(159, 77, 45, 0.12);
+  color: #7f2d15;
+  font-weight: 700;
 }
 
 .page-header {

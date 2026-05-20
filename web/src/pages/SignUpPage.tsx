@@ -1,15 +1,35 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AuthShell } from '../layout/AuthShell'
+import { authClient } from '../lib/auth-client'
 
 export function SignUpPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState('STUDENT')
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
+    setError('')
+
+    await authClient.signUp.email(
+      {
+        name,
+        email,
+        password,
+      },
+      {
+        onSuccess: () => {
+          navigate('/')
+        },
+        onError: ({ error: requestError }) => {
+          setError(requestError.message)
+        },
+      },
+    )
   }
 
   return (
@@ -37,14 +57,7 @@ export function SignUpPage() {
           />
         </label>
 
-        <label className="field">
-          <span>Rôle</span>
-          <select value={role} onChange={(event) => setRole(event.target.value)}>
-            <option value="STUDENT">Student</option>
-            <option value="TEACHER">Teacher</option>
-            <option value="ADMIN">Admin</option>
-          </select>
-        </label>
+        {error ? <p className="form-error">{error}</p> : null}
 
         <div className="form-actions">
           <button className="button" type="submit">

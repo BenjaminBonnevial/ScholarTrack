@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { authClient, useSession } from '../lib/auth-client'
 
 const navigation = [
   { to: '/', label: 'Dashboard' },
@@ -18,6 +19,20 @@ function ActionLink({ to, children }: { to: string; children: ReactNode }) {
 }
 
 export function AppShell() {
+  const navigate = useNavigate()
+  const { data: session } = useSession()
+  const role = (session as { role?: string } | null | undefined)?.role ?? 'STUDENT'
+
+  const handleSignOut = async () => {
+    await authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          navigate('/auth/login')
+        },
+      },
+    })
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -46,10 +61,20 @@ export function AppShell() {
 
         <div className="sidebar-card">
           <p className="eyebrow">Raccourcis auth</p>
-          <p className="sidebar-card-title">Tester les écrans d’accès.</p>
+          <p className="sidebar-card-title">
+            {session ? `Connecté en tant que ${session.user.email}` : 'Session active.'}
+          </p>
+          {session ? (
+            <p className="sidebar-card-copy">Rôle {role}</p>
+          ) : null}
           <div className="sidebar-actions">
             <ActionLink to="/auth/login">Connexion</ActionLink>
             <ActionLink to="/auth/register">Créer un compte</ActionLink>
+            {session ? (
+              <button type="button" className="button button-ghost" onClick={handleSignOut}>
+                Déconnexion
+              </button>
+            ) : null}
           </div>
         </div>
       </aside>

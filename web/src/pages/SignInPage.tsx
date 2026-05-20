@@ -1,13 +1,36 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthShell } from '../layout/AuthShell'
+import { authClient } from '../lib/auth-client'
 
 export function SignInPage() {
   const [email, setEmail] = useState('admin@scholartrack.local')
   const [password, setPassword] = useState('admin123!')
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: { pathname?: string } } | undefined)?.from
+    ?.pathname ?? '/'
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
+    setError('')
+
+    await authClient.signIn.email(
+      {
+        email,
+        password,
+      },
+      {
+        onSuccess: () => {
+          navigate(from)
+        },
+        onError: ({ error: requestError }) => {
+          setError(requestError.message)
+        },
+      },
+    )
   }
 
   return (
@@ -29,6 +52,8 @@ export function SignInPage() {
             type="password"
           />
         </label>
+
+        {error ? <p className="form-error">{error}</p> : null}
 
         <div className="form-actions">
           <button className="button" type="submit">
