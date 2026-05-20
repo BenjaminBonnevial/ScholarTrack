@@ -7,6 +7,19 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
 model User {
   id            String    @id
   name          String
@@ -15,12 +28,127 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  role          String    @default("STUDENT")
+  role          Role      @default(STUDENT)
   sessions      Session[]
   accounts      Account[]
+  coursesTaught Course[]  @relation("TeacherCourses")
+  enrollments   Enrollment[]
+  grades        Grade[]   @relation("StudentGrades")
+  gradesRecorded Grade[]  @relation("RecordedGrades")
+  attendance    AttendanceRecord[]
 
   @@unique([email])
   @@map("user")
+}
+
+model Semester {
+  id        String   @id @default(uuid())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  courses   Course[]
+
+  @@unique([name])
+  @@map("semester")
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  code        String
+  title       String
+  description String?
+  capacity    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  teacherId   String
+  semesterId  String
+
+  teacher      User                     @relation("TeacherCourses", fields: [teacherId], references: [id])
+  semester     Semester                 @relation(fields: [semesterId], references: [id])
+  enrollments  Enrollment[]
+  grades       Grade[]
+  sessions     CourseSession[]
+  weights      CourseEvaluationWeight[]
+
+  @@unique([code])
+  @@index([teacherId])
+  @@index([semesterId])
+  @@map("course")
+}
+
+model CourseEvaluationWeight {
+  id       String         @id @default(uuid())
+  courseId String
+  type     String
+  weight   Float
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, type])
+  @@map("course_evaluation_weight")
+}
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  courseId   String
+  studentId  String
+  enrolledAt DateTime @default(now())
+  atRisk     Boolean  @default(false)
+
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, studentId])
+  @@index([studentId])
+  @@map("enrollment")
+}
+
+model Grade {
+  id             String         @id @default(uuid())
+  courseId       String
+  studentId      String
+  evaluationType String
+  score          Float
+  recordedAt     DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  recordedById   String
+
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student    User   @relation("StudentGrades", fields: [studentId], references: [id], onDelete: Cascade)
+  recordedBy User   @relation("RecordedGrades", fields: [recordedById], references: [id])
+
+  @@index([courseId])
+  @@index([studentId])
+  @@map("grade")
+}
+
+model CourseSession {
+  id          String   @id @default(uuid())
+  courseId    String
+  sessionDate DateTime
+  topic       String?
+  createdAt   DateTime @default(now())
+
+  course      Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attendance  AttendanceRecord[]
+
+  @@index([courseId])
+  @@map("course_session")
+}
+
+model AttendanceRecord {
+  id        String           @id @default(uuid())
+  sessionId String
+  studentId String
+  status    AttendanceStatus
+  recordedAt DateTime        @default(now())
+
+  session CourseSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+  @@index([studentId])
+  @@map("attendance_record")
 }
 
 model Session {
