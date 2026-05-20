@@ -1,5 +1,5 @@
 import { Body, Controller, Post, UsePipes } from "@nestjs/common";
-import { Public } from "../auth/decorators/roles.decorator";
+import { Public, Roles } from "../auth/decorators/roles.decorator";
 import { CourseCapacityPipe, type CourseCapacityInput } from "../common/pipes/course-capacity.pipe";
 import { EnrollStudentDto } from "../common/dto/enrollment.dto";
 import { EnrollmentsService } from "./enrollments.service";
@@ -9,6 +9,7 @@ export class EnrollmentsController {
   constructor(private readonly enrollmentsService: EnrollmentsService) {}
 
   @Post()
+  @Roles("ADMIN")
   enroll(@Body() dto: EnrollStudentDto) {
     return this.enrollmentsService.enroll(dto);
   }

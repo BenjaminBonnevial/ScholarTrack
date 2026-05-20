@@ -10,10 +10,13 @@ type RateLimitWindow = {
 export class RateLimitMiddleware implements NestMiddleware {
   private readonly windows = new Map<string, RateLimitWindow>();
 
-  constructor(
-    private readonly maxRequests = Number(process.env.RATE_LIMIT_MAX_REQUESTS ?? 100),
-    private readonly windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000),
-  ) {}
+  private readonly maxRequests: number;
+  private readonly windowMs: number;
+
+  constructor(maxRequests?: number, windowMs?: number) {
+    this.maxRequests = maxRequests ?? Number(process.env.RATE_LIMIT_MAX_REQUESTS ?? 100);
+    this.windowMs = windowMs ?? Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000);
+  }
 
   use(req: Request, res: Response, next: NextFunction): void {
     const forwardedFor = req.headers["x-forwarded-for"]?.toString();

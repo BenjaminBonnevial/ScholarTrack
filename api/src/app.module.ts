@@ -13,9 +13,11 @@ import { RolesGuard } from "./auth/guards/roles.guard";
 import { SessionGuard } from "./auth/guards/session.guard";
 import { RateLimitMiddleware } from "./common/middleware/rate-limit.middleware";
 import { UsersModule } from "./users/users.module";
+import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
   imports: [
+    PrismaModule,
     AuthModule,
     UsersModule,
     CoursesModule,
@@ -40,7 +42,7 @@ import { UsersModule } from "./users/users.module";
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(new RateLimitMiddleware()).forRoutes({
+    consumer.apply(RateLimitMiddleware).forRoutes({
       path: "*",
       method: RequestMethod.ALL,
     });

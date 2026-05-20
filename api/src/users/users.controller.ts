@@ -3,8 +3,10 @@ import { CreateUserDto, UpdateUserRoleDto } from "../common/dto/user.dto";
 import { IdParamDto } from "../common/dto/id-param.dto";
 import { UserListDto } from "../common/dto/user-list.dto";
 import { UsersService } from "./users.service";
+import { Roles } from "../auth/decorators/roles.decorator";
 
 @Controller("users")
+@Roles("ADMIN")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
