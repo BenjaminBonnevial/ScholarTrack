@@ -11,7 +11,11 @@ import { RateLimitMiddleware } from "../src/common/middleware/rate-limit.middlew
 
 @Module({
   controllers: [AppController, EnrollmentsController],
-  providers: [AppService, EnrollmentsService],
+  providers: [
+    AppService,
+    // EnrollmentsService is only needed for DI; capacity-check uses the pipe, not the service
+    { provide: EnrollmentsService, useValue: {} },
+  ],
 })
 class IntegrationTestModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
