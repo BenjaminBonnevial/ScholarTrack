@@ -38,6 +38,21 @@ export class GradesService {
     return totalWeight === 0 ? null : weightedSum / totalWeight;
   }
 
+  /** List grades, optionally filtered by course and/or student. */
+  async list(query: { courseId?: string; studentId?: string }) {
+    return this.prisma.grade.findMany({
+      where: {
+        ...(query.courseId ? { courseId: query.courseId } : {}),
+        ...(query.studentId ? { studentId: query.studentId } : {}),
+      },
+      include: {
+        student: { select: { id: true, name: true, email: true } },
+        course: { select: { id: true, title: true, code: true } },
+      },
+      orderBy: { recordedAt: "desc" },
+    });
+  }
+
   /** Record a grade — student must be enrolled in the course. */
   async create(dto: CreateGradeDto, actor: AuthSessionData) {
     const enrollment = await this.prisma.enrollment.findUnique({

@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Query, Req } from "@nestjs/common";
 import type { Request } from "express";
 import { CreateGradeDto, GradeImportDto, UpdateGradeDto } from "../common/dto/grade.dto";
 import { IdParamDto } from "../common/dto/id-param.dto";
@@ -9,6 +9,11 @@ import { Roles } from "../auth/decorators/roles.decorator";
 @Roles("TEACHER", "ADMIN")
 export class GradesController {
   constructor(private readonly gradesService: GradesService) {}
+
+  @Get()
+  list(@Query("courseId") courseId?: string, @Query("studentId") studentId?: string) {
+    return this.gradesService.list({ courseId, studentId });
+  }
 
   @Post()
   create(@Body() dto: CreateGradeDto, @Req() req: Request) {
