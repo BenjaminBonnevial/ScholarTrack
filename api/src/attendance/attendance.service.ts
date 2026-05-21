@@ -13,6 +13,15 @@ const AT_RISK_THRESHOLD = 0.33;
 export class AttendanceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** List course sessions, optionally filtered by course. */
+  async listSessions(courseId?: string) {
+    return this.prisma.courseSession.findMany({
+      where: courseId ? { courseId } : undefined,
+      include: { course: { select: { id: true, title: true, code: true } } },
+      orderBy: { sessionDate: "desc" },
+    });
+  }
+
   /** Create an attendance session for a course. Teachers can only do this for their own courses. */
   async createSession(dto: CreateCourseSessionDto, actor: AuthSessionData) {
     const course = await this.prisma.course.findUnique({ where: { id: dto.courseId } });
