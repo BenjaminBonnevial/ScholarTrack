@@ -3,8 +3,10 @@ import { authClient, useSession } from '../lib/auth-client'
 
 const navigation = [
   { to: '/', label: 'Dashboard' },
+  { to: '/semesters', label: 'Semesters', roles: ['ADMIN'] },
   { to: '/courses', label: 'Courses', roles: ['TEACHER', 'ADMIN'] },
   { to: '/users', label: 'Users', roles: ['ADMIN'] },
+  { to: '/enrollments', label: 'Enrollments', roles: ['ADMIN'] },
   { to: '/grades', label: 'Grades', roles: ['TEACHER', 'ADMIN'] },
   { to: '/attendance', label: 'Attendance', roles: ['TEACHER', 'ADMIN'] },
 ]

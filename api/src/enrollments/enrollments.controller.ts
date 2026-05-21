@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UsePipes } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UsePipes } from "@nestjs/common";
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { Public, Roles } from "../auth/decorators/roles.decorator";
 import { CourseCapacityPipe, type CourseCapacityInput } from "../common/pipes/course-capacity.pipe";
@@ -10,6 +10,14 @@ import { EnrollmentsService } from "./enrollments.service";
 @Controller("enrollments")
 export class EnrollmentsController {
   constructor(private readonly enrollmentsService: EnrollmentsService) {}
+
+  @Get()
+  @Roles("ADMIN")
+  @ApiOperation({ summary: "List enrollments, optionally filtered by courseId" })
+  @ApiResponse({ status: 200, description: "Enrollment list" })
+  list(@Query("courseId") courseId?: string) {
+    return this.enrollmentsService.list(courseId);
+  }
 
   @Post()
   @Roles("ADMIN")

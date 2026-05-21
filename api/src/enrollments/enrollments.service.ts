@@ -11,6 +11,18 @@ import { EnrollStudentDto } from "../common/dto/enrollment.dto";
 export class EnrollmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** List enrollments, optionally filtered by courseId. */
+  async list(courseId?: string) {
+    return this.prisma.enrollment.findMany({
+      where: courseId ? { courseId } : undefined,
+      include: {
+        course: { select: { id: true, code: true, title: true } },
+        student: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { enrolledAt: "desc" },
+    });
+  }
+
   /** Enroll a student in a course with capacity and duplicate checks. */
   async enroll(dto: EnrollStudentDto) {
     const course = await this.prisma.course.findUnique({
