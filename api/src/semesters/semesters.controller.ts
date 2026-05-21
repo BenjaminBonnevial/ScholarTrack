@@ -9,6 +9,7 @@ import {
   Query,
 } from "@nestjs/common";
 import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Roles } from "../auth/decorators/roles.decorator";
 import { IdParamDto } from "../common/dto/id-param.dto";
 import { PaginationDto } from "../common/dto/pagination.dto";
 import { CreateSemesterDto, UpdateSemesterDto } from "../common/dto/semester.dto";
@@ -16,6 +17,7 @@ import { SemestersService } from "./semesters.service";
 
 @ApiTags("semesters")
 @ApiCookieAuth()
+@Roles("ADMIN")
 @Controller("semesters")
 export class SemestersController {
   constructor(private readonly semestersService: SemestersService) {}
