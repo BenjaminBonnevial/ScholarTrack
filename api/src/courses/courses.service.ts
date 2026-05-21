@@ -25,6 +25,7 @@ export class CoursesService {
         capacity: dto.capacity,
         teacherId,
         semesterId: dto.semesterId,
+        classroomId: dto.classroomId,
         weights: dto.weights?.length
           ? { create: dto.weights.map((w) => ({ type: w.type, weight: w.weight })) }
           : undefined,
@@ -33,11 +34,40 @@ export class CoursesService {
     });
   }
 
-  /** List courses — teachers only see their own, admins and students see all. */
+  /** List courses — teachers only see their own, students see their classroom's, admins see all. */
   async list(query: CourseFilterDto, actor: AuthSessionData) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const role = (actor as unknown as { role: string }).role;
+
+    // Students only see courses assigned to their classroom
+    if (role === "STUDENT") {
+      const user = await this.prisma.user.findUnique({
+        where: { id: actor.user.id },
+        select: { classroomId: true },
+      });
+      if (!user?.classroomId) {
+        return { items: [], total: 0, page, limit };
+      }
+      const where = { classroomId: user.classroomId };
+      const [items, total] = await Promise.all([
+        this.prisma.course.findMany({
+          where,
+          skip: (page - 1) * limit,
+          take: limit,
+          include: {
+            weights: true,
+            teacher: { select: { id: true, name: true } },
+            semester: { select: { id: true, name: true } },
+            classroom: { select: { id: true, name: true } },
+            _count: { select: { enrollments: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        this.prisma.course.count({ where }),
+      ]);
+      return { items, total, page, limit };
+    }
 
     const where = {
       ...(role === "TEACHER" ? { teacherId: actor.user.id } : {}),
@@ -62,6 +92,7 @@ export class CoursesService {
           weights: true,
           teacher: { select: { id: true, name: true } },
           semester: { select: { id: true, name: true } },
+          classroom: { select: { id: true, name: true } },
           _count: { select: { enrollments: true } },
         },
         orderBy: { createdAt: "desc" },
@@ -96,12 +127,13 @@ export class CoursesService {
       throw new ForbiddenException("You can only update your own courses.");
     }
 
-    const { weights, ...rest } = dto;
+    const { weights, classroomId, ...rest } = dto;
 
     return this.prisma.course.update({
       where: { id },
       data: {
         ...rest,
+        ...(classroomId !== undefined ? { classroomId } : {}),
         ...(weights !== undefined
           ? {
               weights: {

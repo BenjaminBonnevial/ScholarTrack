@@ -3,6 +3,7 @@ import { requestJson } from '../lib/api'
 
 type Semester = { id: string; name: string }
 type Teacher = { id: string; name: string; email: string }
+type Classroom = { id: string; name: string }
 
 const emptyDraft = {
   code: '',
@@ -11,6 +12,7 @@ const emptyDraft = {
   capacity: '30',
   teacherId: '',
   semesterId: '',
+  classroomId: '',
 }
 
 export function CoursesPage() {
@@ -23,17 +25,19 @@ export function CoursesPage() {
   const [editDraft, setEditDraft] = useState<any | null>(null)
   const [semesters, setSemesters] = useState<Semester[]>([])
   const [teachers, setTeachers] = useState<Teacher[]>([])
+  const [classrooms, setClassrooms] = useState<Classroom[]>([])
 
   useEffect(() => {
     void fetchCourses()
     void requestJson<any>('/semesters').then((d) => {
-      const list = Array.isArray(d) ? d : (d?.items ?? [])
-      setSemesters(list)
+      setSemesters(Array.isArray(d) ? d : (d?.items ?? []))
     })
     void requestJson<any>('/users?role=TEACHER&limit=100').then((d) => {
-      const list = Array.isArray(d) ? d : (d?.items ?? [])
-      setTeachers(list)
+      setTeachers(Array.isArray(d) ? d : (d?.items ?? []))
     })
+    void requestJson<any>('/classrooms').then((d) => {
+      setClassrooms(Array.isArray(d) ? d : [])
+    }).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -51,6 +55,7 @@ export function CoursesPage() {
           capacity: Number(draft.capacity),
           teacherId: draft.teacherId || undefined,
           semesterId: draft.semesterId,
+          classroomId: draft.classroomId || undefined,
         }),
       })
       setDraft(emptyDraft)
@@ -81,6 +86,7 @@ export function CoursesPage() {
       title: course.title ?? '',
       description: course.description ?? '',
       capacity: String(course.capacity ?? ''),
+      classroomId: course.classroom?.id ?? '',
     })
   }
 
@@ -94,6 +100,7 @@ export function CoursesPage() {
           title: editDraft.title,
           description: editDraft.description || undefined,
           capacity: Number(editDraft.capacity),
+          classroomId: editDraft.classroomId || undefined,
         }),
       })
       setEditId(null)
@@ -186,7 +193,7 @@ export function CoursesPage() {
                 </select>
               </label>
 
-              <label className="field form-grid-span-2">
+              <label className="field">
                 <span>Teacher (optional)</span>
                 <select
                   value={draft.teacherId}
@@ -195,6 +202,19 @@ export function CoursesPage() {
                   <option value="">— Assign automatically —</option>
                   {teachers.map((t) => (
                     <option key={t.id} value={t.id}>{t.name} — {t.email}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field">
+                <span>Classroom (optional)</span>
+                <select
+                  value={draft.classroomId}
+                  onChange={(e) => setDraft({ ...draft, classroomId: e.target.value })}
+                >
+                  <option value="">— None —</option>
+                  {classrooms.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </label>
@@ -224,6 +244,7 @@ export function CoursesPage() {
                     <strong>{c.title}</strong>
                     <div className="muted">
                       {c.code} · {c.semester?.name ?? '—'}
+                      {c.classroom ? ` · ${c.classroom.name}` : ''}
                       {c._count?.enrollments != null
                         ? ` · ${c._count.enrollments}/${c.capacity} enrolled`
                         : ''}
@@ -277,6 +298,18 @@ export function CoursesPage() {
                 value={editDraft.capacity}
                 onChange={(e) => setEditDraft({ ...editDraft, capacity: e.target.value })}
               />
+            </label>
+            <label className="field">
+              <span>Classroom</span>
+              <select
+                value={editDraft.classroomId ?? ''}
+                onChange={(e) => setEditDraft({ ...editDraft, classroomId: e.target.value })}
+              >
+                <option value="">— None —</option>
+                {classrooms.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             </label>
             <div className="form-actions form-grid-span-2">
               <button className="button" onClick={() => void saveEdit()}>Save</button>

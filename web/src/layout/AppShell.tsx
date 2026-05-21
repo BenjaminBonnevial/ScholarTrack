@@ -7,6 +7,8 @@ const navigation = [
   { to: '/courses', label: 'Courses', roles: ['TEACHER', 'ADMIN'] },
   { to: '/users', label: 'Users', roles: ['ADMIN'] },
   { to: '/enrollments', label: 'Enrollments', roles: ['ADMIN'] },
+  { to: '/classrooms', label: 'Classrooms', roles: ['ADMIN'] },
+  { to: '/schedule', label: 'My Schedule', roles: ['STUDENT'] },
   { to: '/grades', label: 'Grades', roles: ['TEACHER', 'ADMIN'] },
   { to: '/attendance', label: 'Attendance', roles: ['TEACHER', 'ADMIN'] },
 ]
