@@ -47,6 +47,10 @@ export class CreateCourseDto {
   semesterId!: string;
 
   @IsOptional()
+  @IsUUID()
+  classroomId?: string;
+
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => CourseWeightDto)
   @ArrayMinSize(1)
@@ -81,6 +85,10 @@ export class UpdateCourseDto {
   @IsOptional()
   @IsUUID()
   semesterId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  classroomId?: string;
 
   @IsOptional()
   @ValidateNested({ each: true })

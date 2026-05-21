@@ -4,63 +4,61 @@ import { AuthShell } from '../layout/AuthShell'
 import { authClient } from '../lib/auth-client'
 
 export function SignInPage() {
-  const [email, setEmail] = useState('admin@scholartrack.local')
-  const [password, setPassword] = useState('admin123!')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: { pathname?: string } } | undefined)?.from
-    ?.pathname ?? '/'
+  const from =
+    (location.state as { from?: { pathname?: string } } | undefined)?.from?.pathname ?? '/'
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
     setError('')
-
-    await authClient.signIn.email(
-      {
-        email,
-        password,
-      },
-      {
-        onSuccess: () => {
-          navigate(from)
-        },
-        onError: ({ error: requestError }) => {
-          setError(requestError.message)
-        },
-      },
-    )
+    setLoading(true)
+    const { error: signInError } = await authClient.signIn.email({ email, password })
+    setLoading(false)
+    if (signInError) {
+      setError(signInError.message ?? 'Sign in failed')
+    } else {
+      navigate(from, { replace: true })
+    }
   }
 
   return (
-    <AuthShell
-      title="Se connecter"
-      subtitle="Ouvre le cockpit pour tester les pages admin, les listes et les formulaires métier."
-    >
-      <form className="form-stack auth-form" onSubmit={handleSubmit}>
+    <AuthShell title="Sign in">
+      <form className="auth-form" onSubmit={handleSubmit}>
         <label className="field">
           <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" />
-        </label>
-
-        <label className="field">
-          <span>Mot de passe</span>
           <input
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            type="password"
+            required
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </label>
 
-        {error ? <p className="form-error">{error}</p> : null}
+        <label className="field">
+          <span>Password</span>
+          <input
+            required
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </label>
+
+        {error && <p className="form-error">{error}</p>}
 
         <div className="form-actions">
-          <button className="button" type="submit">
-            Se connecter
+          <button className="button" type="submit" disabled={loading}>
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
-          <Link className="button button-secondary" to="/auth/register">
-            Créer un compte
+          <Link className="button-secondary button" to="/auth/register">
+            Create an account
           </Link>
         </div>
       </form>

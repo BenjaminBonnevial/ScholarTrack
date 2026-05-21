@@ -3,11 +3,15 @@ import './App.css'
 import { RequireSession } from './components/RequireSession'
 import { AppShell } from './layout/AppShell'
 import { AttendancePage } from './pages/AttendancePage'
+import { ClassroomsPage } from './pages/ClassroomsPage'
 import { CoursesPage } from './pages/CoursesPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { EnrollmentsPage } from './pages/EnrollmentsPage'
 import { GradesPage } from './pages/GradesPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import NotAuthorizedPage from './pages/NotAuthorizedPage'
+import { SchedulePage } from './pages/SchedulePage'
+import { SemestersPage } from './pages/SemestersPage'
 import { SignInPage } from './pages/SignInPage'
 import { SignUpPage } from './pages/SignUpPage'
 import { UsersPage } from './pages/UsersPage'
@@ -32,10 +36,42 @@ function App() {
           }
         />
         <Route
+          path="semesters"
+          element={
+            <RequireSession allowedRoles={["ADMIN"]}>
+              <SemestersPage />
+            </RequireSession>
+          }
+        />
+        <Route
           path="users"
           element={
             <RequireSession allowedRoles={["ADMIN"]}>
               <UsersPage />
+            </RequireSession>
+          }
+        />
+        <Route
+          path="enrollments"
+          element={
+            <RequireSession allowedRoles={["ADMIN"]}>
+              <EnrollmentsPage />
+            </RequireSession>
+          }
+        />
+        <Route
+          path="classrooms"
+          element={
+            <RequireSession allowedRoles={["ADMIN"]}>
+              <ClassroomsPage />
+            </RequireSession>
+          }
+        />
+        <Route
+          path="schedule"
+          element={
+            <RequireSession allowedRoles={["STUDENT", "ADMIN"]}>
+              <SchedulePage />
             </RequireSession>
           }
         />

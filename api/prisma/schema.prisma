@@ -29,6 +29,7 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   role          Role      @default(STUDENT)
+  classroomId   String?
   sessions      Session[]
   accounts      Account[]
   coursesTaught Course[]  @relation("TeacherCourses")
@@ -36,20 +37,38 @@ model User {
   grades        Grade[]   @relation("StudentGrades")
   gradesRecorded Grade[]  @relation("RecordedGrades")
   attendance    AttendanceRecord[]
+  classroom     Classroom? @relation(fields: [classroomId], references: [id], onDelete: SetNull)
 
   @@unique([email])
   @@map("user")
 }
 
 model Semester {
-  id        String   @id @default(uuid())
-  name      String
-  startDate DateTime
-  endDate   DateTime
-  courses   Course[]
+  id         String      @id @default(uuid())
+  name       String
+  startDate  DateTime
+  endDate    DateTime
+  courses    Course[]
+  classrooms Classroom[]
 
   @@unique([name])
   @@map("semester")
+}
+
+model Classroom {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  semesterId  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  semester Semester? @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  students User[]
+  courses  Course[]
+
+  @@unique([name])
+  @@map("classroom")
 }
 
 model Course {
@@ -62,9 +81,11 @@ model Course {
   updatedAt   DateTime @updatedAt
   teacherId   String
   semesterId  String
+  classroomId String?
 
   teacher      User                     @relation("TeacherCourses", fields: [teacherId], references: [id])
   semester     Semester                 @relation(fields: [semesterId], references: [id])
+  classroom    Classroom?               @relation(fields: [classroomId], references: [id], onDelete: SetNull)
   enrollments  Enrollment[]
   grades       Grade[]
   sessions     CourseSession[]

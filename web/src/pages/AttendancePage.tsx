@@ -1,242 +1,249 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { requestJson } from '../lib/api'
 
-const sessionDraftDefaults = {
-  courseId: '55555555-5555-5555-5555-555555555555',
-  sessionDate: '2026-09-01T08:00:00.000Z',
-  topic: 'Introduction',
+type Course = { id: string; code: string; title: string }
+type Student = { id: string; name: string; email: string }
+type CourseSession = {
+  id: string
+  sessionDate: string
+  topic: string | null
+  course: { code: string; title: string }
 }
 
-const recordsDraftDefaults = {
-  sessionId: '66666666-6666-6666-6666-666666666666',
-  studentId: '77777777-7777-7777-7777-777777777777',
+const emptySessionDraft = {
+  courseId: '',
+  sessionDate: '',
+  topic: '',
+}
+
+const emptyRecordDraft = {
+  sessionId: '',
+  studentId: '',
   status: 'PRESENT',
 }
 
-type SessionResponse = {
-  action: string
-  payload: {
-    courseId: string
-    sessionDate: string
-    topic?: string
-  }
-}
-
-type AttendanceResponse = {
-  action: string
-  payload: {
-    sessionId: string
-    records: Array<{
-      studentId: string
-      status: string
-    }>
-  }
-}
-
 export function AttendancePage() {
-  const [sessionDraft, setSessionDraft] = useState(sessionDraftDefaults)
-  const [recordsDraft, setRecordsDraft] = useState(recordsDraftDefaults)
-  const [sessionResponse, setSessionResponse] = useState('')
-  const [recordsResponse, setRecordsResponse] = useState('')
+  const [sessionDraft, setSessionDraft] = useState(emptySessionDraft)
+  const [recordDraft, setRecordDraft] = useState(emptyRecordDraft)
   const [error, setError] = useState('')
   const [sessionSubmitting, setSessionSubmitting] = useState(false)
-  const [recordsSubmitting, setRecordsSubmitting] = useState(false)
+  const [recordSubmitting, setRecordSubmitting] = useState(false)
+  const [courses, setCourses] = useState<Course[]>([])
+  const [sessions, setSessions] = useState<CourseSession[]>([])
+  const [students, setStudents] = useState<Student[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    void fetchSessions()
+    void requestJson<any>('/courses').then((d) => {
+      const list = Array.isArray(d) ? d : (d?.items ?? [])
+      setCourses(list)
+    })
+    void requestJson<any>('/users?role=STUDENT&limit=100').then((d) => {
+      const list = Array.isArray(d) ? d : (d?.items ?? [])
+      setStudents(list)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function fetchSessions() {
+    setIsLoading(true)
+    try {
+      const data = await requestJson<CourseSession[]>('/attendance/sessions')
+      setSessions(Array.isArray(data) ? data : [])
+    } catch {
+      setSessions([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleSessionSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
     setSessionSubmitting(true)
     setError('')
-
     try {
-      const result = await requestJson<SessionResponse>('/attendance/sessions', {
+      await requestJson('/attendance/sessions', {
         method: 'POST',
-        body: JSON.stringify(sessionDraft),
+        body: JSON.stringify({
+          courseId: sessionDraft.courseId,
+          sessionDate: new Date(sessionDraft.sessionDate).toISOString(),
+          topic: sessionDraft.topic || undefined,
+        }),
       })
-
-      setSessionResponse(JSON.stringify(result, null, 2))
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error ? requestError.message : 'Attendance session failed',
-      )
+      setSessionDraft(emptySessionDraft)
+      await fetchSessions()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Session creation failed')
     } finally {
       setSessionSubmitting(false)
     }
-
-    setSessionDraft(sessionDraftDefaults)
   }
 
-  const handleRecordsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleRecordSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
-    setRecordsSubmitting(true)
+    setRecordSubmitting(true)
     setError('')
-
     try {
-      const result = await requestJson<AttendanceResponse>('/attendance/records', {
+      await requestJson('/attendance/records', {
         method: 'POST',
         body: JSON.stringify({
-          sessionId: recordsDraft.sessionId,
-          records: [
-            {
-              studentId: recordsDraft.studentId,
-              status: recordsDraft.status,
-            },
-          ],
+          sessionId: recordDraft.sessionId,
+          records: [{ studentId: recordDraft.studentId, status: recordDraft.status }],
         }),
       })
-
-      setRecordsResponse(JSON.stringify(result, null, 2))
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error ? requestError.message : 'Attendance record failed',
-      )
+      setRecordDraft(emptyRecordDraft)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Attendance record failed')
     } finally {
-      setRecordsSubmitting(false)
+      setRecordSubmitting(false)
     }
-
-    setRecordsDraft(recordsDraftDefaults)
   }
 
   return (
     <div className="page-stack">
-      <section className="page-header">
+      <div className="page-header">
         <div>
-          <p className="eyebrow">Suivi</p>
-          <h2>Créer des sessions et marquer les présences via l’API.</h2>
-          <p className="lede">
-            La page couvre les deux routes d’assiduité du backend avec des payloads
-            valides et des UUID de démonstration.
-          </p>
+          <h2 className="page-title">Attendance</h2>
+          <p className="page-subtitle">Create sessions and record student attendance.</p>
         </div>
         <div className="tag-row">
           <span className="tag">POST /attendance/sessions</span>
           <span className="tag">POST /attendance/records</span>
-          <span className="tag">AttendanceStatus enum</span>
         </div>
-      </section>
+      </div>
 
-      <section className="list-grid">
-        <article className="panel">
-          <p className="eyebrow">Nouvelle session</p>
+      <div className="grid-2">
+        <div className="panel">
+          <p className="panel-title">New session</p>
           <form className="form-stack" onSubmit={handleSessionSubmit}>
             <div className="form-grid">
               <label className="field">
-                <span>Cours ID</span>
-                <input
+                <span>Course</span>
+                <select
                   required
                   value={sessionDraft.courseId}
-                  onChange={(event) =>
-                    setSessionDraft({ ...sessionDraft, courseId: event.target.value })
-                  }
-                />
+                  onChange={(e) => setSessionDraft({ ...sessionDraft, courseId: e.target.value })}
+                >
+                  <option value="">— Select a course —</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>{c.code} — {c.title}</option>
+                  ))}
+                </select>
               </label>
 
               <label className="field">
-                <span>Date de session</span>
+                <span>Session date</span>
                 <input
                   required
                   type="datetime-local"
-                  value={sessionDraft.sessionDate.slice(0, 16)}
-                  onChange={(event) =>
-                    setSessionDraft({
-                      ...sessionDraft,
-                      sessionDate: new Date(event.target.value).toISOString(),
-                    })
-                  }
+                  value={sessionDraft.sessionDate}
+                  onChange={(e) => setSessionDraft({ ...sessionDraft, sessionDate: e.target.value })}
                 />
               </label>
 
-              <label className="field">
-                <span>Topic</span>
+              <label className="field form-grid-span-2">
+                <span>Topic (optional)</span>
                 <input
                   value={sessionDraft.topic}
-                  onChange={(event) =>
-                    setSessionDraft({ ...sessionDraft, topic: event.target.value })
-                  }
+                  onChange={(e) => setSessionDraft({ ...sessionDraft, topic: e.target.value })}
                 />
               </label>
             </div>
+
+            {error && <p className="form-error">{error}</p>}
 
             <div className="form-actions">
               <button className="button" type="submit" disabled={sessionSubmitting}>
-                {sessionSubmitting ? 'Envoi...' : 'Créer la session'}
+                {sessionSubmitting ? 'Creating…' : 'Create session'}
               </button>
-              <p className="helper-text">Le backend renvoie l’objet de session créé.</p>
-            </div>
-            {error ? <p className="form-error">{error}</p> : null}
-          </form>
-        </article>
-
-        <article className="panel">
-          <p className="eyebrow">Réponse session</p>
-          {sessionResponse ? (
-            <pre className="response-block">{sessionResponse}</pre>
-          ) : (
-            <p className="helper-text">Crée une session pour afficher la réponse du serveur.</p>
-          )}
-        </article>
-
-        <article className="panel">
-          <p className="eyebrow">Nouveau relevé</p>
-          <form className="form-stack" onSubmit={handleRecordsSubmit}>
-            <div className="form-grid">
-              <label className="field">
-                <span>Session ID</span>
-                <input
-                  required
-                  value={recordsDraft.sessionId}
-                  onChange={(event) =>
-                    setRecordsDraft({ ...recordsDraft, sessionId: event.target.value })
-                  }
-                />
-              </label>
-
-              <label className="field">
-                <span>Student ID</span>
-                <input
-                  required
-                  value={recordsDraft.studentId}
-                  onChange={(event) =>
-                    setRecordsDraft({ ...recordsDraft, studentId: event.target.value })
-                  }
-                />
-              </label>
-
-              <label className="field">
-                <span>Status</span>
-                <select
-                  value={recordsDraft.status}
-                  onChange={(event) =>
-                    setRecordsDraft({ ...recordsDraft, status: event.target.value })
-                  }
-                >
-                  <option value="PRESENT">PRESENT</option>
-                  <option value="ABSENT">ABSENT</option>
-                  <option value="LATE">LATE</option>
-                  <option value="EXCUSED">EXCUSED</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="form-actions">
-              <button className="button" type="submit" disabled={recordsSubmitting}>
-                {recordsSubmitting ? 'Envoi...' : 'Enregistrer le relevé'}
-              </button>
-              <p className="helper-text">Le backend attend un tableau de records.</p>
             </div>
           </form>
-        </article>
+        </div>
 
-        <article className="panel">
-          <p className="eyebrow">Réponse relevé</p>
-          {recordsResponse ? (
-            <pre className="response-block">{recordsResponse}</pre>
+        <div className="panel">
+          <p className="panel-title">Sessions ({sessions.length})</p>
+          {isLoading ? (
+            <p className="helper-text">Loading…</p>
+          ) : sessions.length === 0 ? (
+            <p className="helper-text">No sessions yet.</p>
           ) : (
-            <p className="helper-text">Enregistre un relevé pour afficher la réponse du serveur.</p>
+            <ul className="list-plain">
+              {sessions.map((s) => (
+                <li key={s.id} className="list-item">
+                  <div>
+                    <strong>{s.course?.code ?? '—'}</strong>
+                    <div className="muted">
+                      {new Date(s.sessionDate).toLocaleDateString()}
+                      {s.topic ? ` · ${s.topic}` : ''}
+                    </div>
+                  </div>
+                  <div className="muted" style={{ fontSize: '0.7rem', fontFamily: 'monospace' }}>
+                    {s.id.slice(0, 8)}…
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
-        </article>
-      </section>
+        </div>
+      </div>
+
+      <div className="panel">
+        <p className="panel-title">Record attendance</p>
+        <form className="form-stack" onSubmit={handleRecordSubmit}>
+          <div className="form-grid">
+            <label className="field">
+              <span>Session</span>
+              <select
+                required
+                value={recordDraft.sessionId}
+                onChange={(e) => setRecordDraft({ ...recordDraft, sessionId: e.target.value })}
+              >
+                <option value="">— Select a session —</option>
+                {sessions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.course?.code ?? '—'} · {new Date(s.sessionDate).toLocaleDateString()}
+                    {s.topic ? ` · ${s.topic}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field">
+              <span>Student</span>
+              <select
+                required
+                value={recordDraft.studentId}
+                onChange={(e) => setRecordDraft({ ...recordDraft, studentId: e.target.value })}
+              >
+                <option value="">— Select a student —</option>
+                {students.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} — {s.email}</option>
+                ))}
+              </select>
+            </label>
+
+            <label className="field">
+              <span>Status</span>
+              <select
+                value={recordDraft.status}
+                onChange={(e) => setRecordDraft({ ...recordDraft, status: e.target.value })}
+              >
+                <option value="PRESENT">Present</option>
+                <option value="ABSENT">Absent</option>
+                <option value="LATE">Late</option>
+                <option value="EXCUSED">Excused</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="form-actions">
+            <button className="button" type="submit" disabled={recordSubmitting}>
+              {recordSubmitting ? 'Saving…' : 'Record attendance'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }

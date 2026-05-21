@@ -4,6 +4,7 @@ import { AuthModule } from "./auth/auth.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { AdminModule } from "./admin/admin.module";
+import { ClassroomsModule } from "./classrooms/classrooms.module";
 import { AttendanceModule } from "./attendance/attendance.module";
 import { CoursesModule } from "./courses/courses.module";
 import { EnrollmentsModule } from "./enrollments/enrollments.module";
@@ -26,6 +27,7 @@ import { PrismaModule } from "./prisma/prisma.module";
     GradesModule,
     AttendanceModule,
     AdminModule,
+    ClassroomsModule,
   ],
   controllers: [AppController],
   providers: [

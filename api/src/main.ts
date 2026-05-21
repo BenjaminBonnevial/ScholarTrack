@@ -17,7 +17,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle("ScholarTrack API")
     .setDescription(
-      "API de gestion académique — cours, notes pondérées, présences et reporting semestriel.",
+      "Academic management API — weighted grades, attendance tracking, and semester reporting.",
     )
     .setVersion("1.0")
     .addCookieAuth("better-auth.session_token")

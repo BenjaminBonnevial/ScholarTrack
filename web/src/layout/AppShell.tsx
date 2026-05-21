@@ -1,22 +1,17 @@
-import type { ReactNode } from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { authClient, useSession } from '../lib/auth-client'
 
 const navigation = [
   { to: '/', label: 'Dashboard' },
-  { to: '/courses', label: 'Cours', allowedRoles: ['TEACHER', 'ADMIN'] },
-  { to: '/users', label: 'Users', allowedRoles: ['ADMIN'] },
-  { to: '/grades', label: 'Notes', allowedRoles: ['TEACHER', 'ADMIN'] },
-  { to: '/attendance', label: 'Présences', allowedRoles: ['TEACHER', 'ADMIN'] },
+  { to: '/semesters', label: 'Semesters', roles: ['ADMIN'] },
+  { to: '/courses', label: 'Courses', roles: ['TEACHER', 'ADMIN'] },
+  { to: '/users', label: 'Users', roles: ['ADMIN'] },
+  { to: '/enrollments', label: 'Enrollments', roles: ['ADMIN'] },
+  { to: '/classrooms', label: 'Classrooms', roles: ['ADMIN'] },
+  { to: '/schedule', label: 'My Schedule', roles: ['STUDENT'] },
+  { to: '/grades', label: 'Grades', roles: ['TEACHER', 'ADMIN'] },
+  { to: '/attendance', label: 'Attendance', roles: ['TEACHER', 'ADMIN'] },
 ]
-
-function ActionLink({ to, children }: { to: string; children: ReactNode }) {
-  return (
-    <Link className="button button-secondary" to={to}>
-      {children}
-    </Link>
-  )
-}
 
 export function AppShell() {
   const navigate = useNavigate()
@@ -24,29 +19,21 @@ export function AppShell() {
   const role = (session as { role?: string } | null | undefined)?.role ?? 'STUDENT'
 
   const handleSignOut = async () => {
-    await authClient.signOut({
-      fetchOptions: {
-        onSuccess: () => {
-          navigate('/auth/login')
-        },
-      },
-    })
+    await authClient.signOut()
+    navigate('/auth/login')
   }
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <Link className="brand" to="/">
+        <div className="brand">
           <span className="brand-mark">S</span>
-          <span>
-            <strong>ScholarTrack</strong>
-            <small>Admin cockpit</small>
-          </span>
-        </Link>
+          <span className="brand-name">ScholarTrack</span>
+        </div>
 
-        <nav className="sidebar-nav" aria-label="Navigation principale">
+        <nav className="sidebar-nav">
           {navigation.map((item) => {
-            if (item.allowedRoles && !item.allowedRoles.includes(role)) return null
+            if (item.roles && !item.roles.includes(role)) return null
             return (
               <NavLink
                 key={item.to}
@@ -62,50 +49,25 @@ export function AppShell() {
           })}
         </nav>
 
-        <div className="sidebar-card">
-          <p className="eyebrow">Raccourcis auth</p>
-          <p className="sidebar-card-title">
-            {session ? `Connecté en tant que ${session.user.email}` : 'Session active.'}
-          </p>
-          {session ? (
-            <p className="sidebar-card-copy">Rôle {role}</p>
-          ) : null}
-          <div className="sidebar-actions">
-            <ActionLink to="/auth/login">Connexion</ActionLink>
-            <ActionLink to="/auth/register">Créer un compte</ActionLink>
-            {session ? (
-              <button type="button" className="button button-ghost" onClick={handleSignOut}>
-                Déconnexion
-              </button>
-            ) : null}
+        {session && (
+          <div className="sidebar-footer">
+            <span className="sidebar-user-email">{session.user.email}</span>
+            <button type="button" className="button-ghost button" onClick={handleSignOut}>
+              Sign out
+            </button>
           </div>
-        </div>
+        )}
       </aside>
 
       <div className="workspace">
         <header className="topbar">
-          <div>
-            <p className="eyebrow">ScholarTrack preview</p>
-            <h1>Gestion académique en mode cockpit.</h1>
-            <p className="topbar-copy">
-              Navigue entre les écrans de connexion, de création de cours, de gestion
-              des users et des pages de suivi pour valider les parcours plus vite
-              qu’avec Postman.
-            </p>
-          </div>
-
-          <div className="topbar-actions">
-              {['TEACHER', 'ADMIN'].includes(role) ? (
-                <Link className="button" to="/courses">
-                  Nouveau cours
-                </Link>
-              ) : null}
-              {role === 'ADMIN' ? (
-                <Link className="button button-ghost" to="/users">
-                  Nouveau user
-                </Link>
-              ) : null}
-          </div>
+          <span className="topbar-title">ScholarTrack</span>
+          {session && (
+            <div className="topbar-right">
+              <span className="topbar-user-email">{session.user.name || session.user.email}</span>
+              <span className="role-badge">{role}</span>
+            </div>
+          )}
         </header>
 
         <main className="content">
