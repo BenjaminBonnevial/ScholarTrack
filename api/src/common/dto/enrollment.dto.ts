@@ -1,9 +1,10 @@
-import { IsUUID } from "class-validator";
+import { IsString, IsUUID, MinLength } from "class-validator";
 
 export class EnrollStudentDto {
   @IsUUID()
   courseId!: string;
 
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   studentId!: string;
 }

@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req } from "@nestjs/common";
-import { ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { ApiBody, ApiConsumes, ApiCookieAuth, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 import { CreateGradeDto, GradeImportDto, UpdateGradeDto } from "../common/dto/grade.dto";
 import { IdParamDto } from "../common/dto/id-param.dto";
@@ -39,9 +40,19 @@ export class GradesController {
   }
 
   @Post("import")
-  @ApiOperation({ summary: "Bulk import grades (all-or-nothing transaction)" })
+  @ApiOperation({ summary: "Bulk import grades from JSON body (all-or-nothing transaction)" })
   @ApiResponse({ status: 201, description: "All grades imported or error report returned" })
   importCsv(@Body() dto: GradeImportDto, @Req() req: Request) {
     return this.gradesService.importCsv(dto, req.auth!);
+  }
+
+  @Post("import/csv")
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({ schema: { type: "object", properties: { file: { type: "string", format: "binary" } } } })
+  @ApiOperation({ summary: "Bulk import grades from CSV file upload (all-or-nothing transaction)" })
+  @ApiResponse({ status: 201, description: "All grades imported or error report returned" })
+  importCsvFile(@UploadedFile() file: { buffer: Buffer; originalname: string }, @Req() req: Request) {
+    return this.gradesService.importCsvFromFile(file.buffer, req.auth!);
   }
 }

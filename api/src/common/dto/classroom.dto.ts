@@ -31,6 +31,7 @@ export class UpdateClassroomDto {
 
 export class AssignStudentsDto {
   @IsArray()
-  @IsUUID("4", { each: true })
+  @IsString({ each: true })
+  @MinLength(1, { each: true })
   studentIds!: string[];
 }

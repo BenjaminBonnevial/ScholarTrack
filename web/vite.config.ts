@@ -15,6 +15,7 @@ export default defineConfig({
       '/enrollments': 'http://localhost:3000',
       '/semesters': 'http://localhost:3000',
       '/admin': 'http://localhost:3000',
+      '/classrooms': 'http://localhost:3000',
     },
   },
 })

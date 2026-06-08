@@ -3,7 +3,7 @@ import { PaginationDto } from "./pagination.dto";
 
 export class CourseFilterDto extends PaginationDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
   teacherId?: string;
 
   @IsOptional()
