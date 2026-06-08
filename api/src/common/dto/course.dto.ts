@@ -40,7 +40,8 @@ export class CreateCourseDto {
   @Min(1)
   capacity!: number;
 
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   teacherId!: string;
 
   @IsUUID()
@@ -79,7 +80,8 @@ export class UpdateCourseDto {
   capacity?: number;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   teacherId?: string;
 
   @IsOptional()

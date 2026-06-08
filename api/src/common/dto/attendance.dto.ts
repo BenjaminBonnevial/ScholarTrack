@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  MinLength,
   ValidateNested,
 } from "class-validator";
 import { AttendanceStatus } from "../enums";
@@ -23,7 +24,8 @@ export class CreateCourseSessionDto {
 }
 
 export class AttendanceRecordDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   studentId!: string;
 
   @IsEnum(AttendanceStatus)

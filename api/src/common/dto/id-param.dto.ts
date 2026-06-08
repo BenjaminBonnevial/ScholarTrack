@@ -1,6 +1,7 @@
-import { IsUUID } from "class-validator";
+import { IsString, MinLength } from "class-validator";
 
 export class IdParamDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   id!: string;
 }

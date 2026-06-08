@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuthSessionData } from "../auth/auth.types";
-import { CreateGradeDto, GradeImportDto, UpdateGradeDto } from "../common/dto/grade.dto";
+import { CreateGradeDto, GradeImportDto, GradeImportRowDto, UpdateGradeDto } from "../common/dto/grade.dto";
 
 @Injectable()
 export class GradesService {
@@ -101,6 +101,32 @@ export class GradesService {
     const updated = await this.prisma.grade.update({ where: { id }, data: dto });
     const average = await this.calculateWeightedAverage(grade.courseId, grade.studentId);
     return { ...updated, weightedAverage: average };
+  }
+
+  /**
+   * Parse a CSV buffer (courseId,studentId,studentEmail,evaluationType,score)
+   * into GradeImportRowDto objects, skipping the header row.
+   */
+  parseCsvBuffer(buffer: Buffer): GradeImportRowDto[] {
+    const lines = buffer.toString("utf-8").split(/\r?\n/).filter((l) => l.trim());
+    const [, ...dataLines] = lines; // skip header
+    return dataLines.map((line) => {
+      const [courseId, studentId, studentEmail, evaluationType, scoreStr] = line.split(",").map((c) => c.trim());
+      const row: GradeImportRowDto = {
+        courseId,
+        score: parseFloat(scoreStr),
+      };
+      if (studentId) row.studentId = studentId;
+      if (studentEmail) row.studentEmail = studentEmail;
+      if (evaluationType) row.evaluationType = evaluationType;
+      return row;
+    });
+  }
+
+  /** Import grades from a raw CSV file buffer — delegates to all-or-nothing importCsv. */
+  async importCsvFromFile(buffer: Buffer, actor: AuthSessionData) {
+    const rows = this.parseCsvBuffer(buffer);
+    return this.importCsv({ rows }, actor);
   }
 
   /**

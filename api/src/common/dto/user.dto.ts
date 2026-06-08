@@ -4,7 +4,6 @@ import {
   IsEnum,
   IsOptional,
   IsString,
-  IsUUID,
   MinLength,
 } from "class-validator";
 import { Role } from "../enums";
@@ -41,12 +40,14 @@ export class UserFilterDto {
 }
 
 export class UserIdDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   id!: string;
 }
 
 export class AuthenticatedUserDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   id!: string;
 
   @IsEmail()

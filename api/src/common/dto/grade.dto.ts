@@ -15,7 +15,8 @@ export class CreateGradeDto {
   @IsUUID()
   courseId!: string;
 
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   studentId!: string;
 
   @IsOptional()
@@ -47,7 +48,8 @@ export class GradeImportRowDto {
   courseId!: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
+  @MinLength(1)
   studentId?: string;
 
   @IsOptional()
